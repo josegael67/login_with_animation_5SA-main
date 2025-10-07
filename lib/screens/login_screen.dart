@@ -11,23 +11,49 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool obscurePassword = true;
 
-  //Cerebro de la lógica de las animaciones
+  // Cerebro de la lógica de las animaciones
   StateMachineController? controller;
-  //SMI: State Machine Input
-  SMIBool? isChecking; //Activa el modo chismoso
-  SMIBool? isHandsUp; //Se tapa los ojos
-  SMITrigger? trigSuccess; //Se emociona
-  SMITrigger? trigFail; //Se pone triste
+  // SMI: State Machine Input
+  SMIBool? isChecking; // Activa el modo chismoso
+  SMIBool? isHandsUp; // Se tapa los ojos
+  SMITrigger? trigSuccess; // Se emociona
+  SMITrigger? trigFail; // Se pone triste
+
+  // 1) FocusNode (FALTABA LOS PARÉNTESIS)
+  final emailFocus = FocusNode();
+  final passFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 2) Listeners
+    emailFocus.addListener(() {
+      if (emailFocus.hasFocus) {
+        isHandsUp?.change(false);
+      }
+    });
+
+    passFocus.addListener(() {
+      isHandsUp?.change(passFocus.hasFocus);
+    });
+  }
+
+  @override
+  void dispose() {
+    // Liberar memoria
+    emailFocus.dispose();
+    passFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    //Obtener el tamaño de la pantalla del dispositivo
     final Size size = MediaQuery.of(context).size;
+
     return Scaffold(
-      //Evita el notch o la cámara frontal
       body: SafeArea(
         child: Padding(
-          //Espaciado
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
@@ -37,13 +63,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: RiveAnimation.asset(
                   'assets/animated_login_character.riv',
                   stateMachines: ["Login Machine"],
-                  //Al iniciarse
                   onInit: (artboard) {
                     controller = StateMachineController.fromArtboard(
                       artboard,
                       "Login Machine",
                     );
-                    //Verificar que inició bien
                     if (controller == null) return;
                     artboard.addController(controller!);
                     isChecking = controller!.findSMI('isChecking');
@@ -53,40 +77,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
               ),
-              //Espacio entre el oso y el texto email
               const SizedBox(height: 10),
-              //Campo de texto del email
               TextField(
+                focusNode: emailFocus,
                 onChanged: (value) {
                   if (isHandsUp != null) {
-                    //Reafirma no taparse los ojos al escribir el email
                     isHandsUp!.change(false);
                   }
                   if (isChecking == null) return;
-                  //Activa el modo
                   isChecking!.change(true);
                 },
-                //Para que aparezca el @ en Móviles UI/UX
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email',
                   prefixIcon: const Icon(Icons.mail),
                   border: OutlineInputBorder(
-                    //esquinas redondeadas
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               TextField(
+                focusNode: passFocus,
                 onChanged: (value) {
                   if (isChecking != null) {
-                    //Reafirma no taparse los ojos al escribir el email
                     isChecking!.change(false);
                   }
                   if (isHandsUp == null) return;
-                  //Activa el modo
-                  isHandsUp!.change(true);
+                  // isHandsUp!.change(true); // Comentado por ti
                 },
                 obscureText: obscurePassword,
                 decoration: InputDecoration(
@@ -108,7 +126,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              //Texto Olvidé la contraseña como botón
               SizedBox(
                 width: size.width,
                 child: Align(
@@ -125,9 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              //Botón de Login
               const SizedBox(height: 10),
-              //Botón estilo Android
               MaterialButton(
                 minWidth: size.width,
                 height: 50,
@@ -136,7 +151,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 onPressed: () {},
-                child: Text('Login', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Login',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               const SizedBox(height: 10),
               SizedBox(
@@ -151,9 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         "Register",
                         style: TextStyle(
                           color: Colors.black,
-                          //Negritas
                           fontWeight: FontWeight.bold,
-                          //Subrayado
                           decoration: TextDecoration.underline,
                         ),
                       ),
