@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
+import 'dart:async'; // Para el temporizador
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,23 +12,25 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool obscurePassword = true;
 
-  // Cerebro de la lógica de las animaciones
+  // Controladores de animación
   StateMachineController? controller;
-  // SMI: State Machine Input
   SMIBool? isChecking; // Activa el modo chismoso
   SMIBool? isHandsUp; // Se tapa los ojos
   SMITrigger? trigSuccess; // Se emociona
   SMITrigger? trigFail; // Se pone triste
 
-  // 1) FocusNode (FALTABA LOS PARÉNTESIS)
+  // FocusNodes para los campos
   final emailFocus = FocusNode();
   final passFocus = FocusNode();
+
+  // Temporizador para dejar de "chismosear"
+  Timer? lookAwayTimer;
 
   @override
   void initState() {
     super.initState();
 
-    // 2) Listeners
+    // Listeners para los FocusNodes
     emailFocus.addListener(() {
       if (emailFocus.hasFocus) {
         isHandsUp?.change(false);
@@ -44,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Liberar memoria
     emailFocus.dispose();
     passFocus.dispose();
+    lookAwayTimer?.cancel(); // 👈 Cancelar el timer al salir
     super.dispose();
   }
 
@@ -85,7 +89,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     isHandsUp!.change(false);
                   }
                   if (isChecking == null) return;
+
+                  // Activa modo chismoso
                   isChecking!.change(true);
+
+                  // Reinicia el temporizador
+                  lookAwayTimer?.cancel();
+
+                  // Después de 3 segundos sin escribir, deja de chismosear
+                  lookAwayTimer = Timer(const Duration(seconds: 3), () {
+                    isChecking!.change(false);
+                  });
                 },
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -104,7 +118,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     isChecking!.change(false);
                   }
                   if (isHandsUp == null) return;
-                  // isHandsUp!.change(true); // Comentado por ti
+                  // Aquí podrías activar la animación de cubrirse los ojos
+                  // isHandsUp!.change(true);
                 },
                 obscureText: obscurePassword,
                 decoration: InputDecoration(
