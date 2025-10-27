@@ -1,39 +1,54 @@
-# 🐻 Bear Login Animation – Flutter App  
-Interactive login screen using Rive animations
 
----
+# 🐻 Polar Bear Login Animation
 
-## ✨ Short Description of Functionalities
-This project implements a fun and interactive login screen using Flutter and Rive.  
-The bear reacts to user actions in real time:
+A Flutter login app featuring an interactive polar bear animation using Rive. The bear reacts dynamically to user input, making the login experience fun and engaging.
 
-- 👀 Eyes covered when typing the password
-- 😳 Bear looks surprised when the password is shown
-- ✅ Success animation when credentials are valid
-- ❌ Error animation when login fails
+## ✨ Features
 
-This improves user experience through smooth and playful UI feedback.
+- Email input observation 👀
+- Password input: bear covers eyes 🙈
+- Success login animation 🎉
+- Failed login animation 😢
+- Real-time interactive animations controlled via Rive State Machine
 
----
+## 🖌️ About Rive & State Machines
 
-## 🎨 What is Rive?  
-**Rive** is an animation tool that allows developers and designers to create real-time, interactive animations that can be used in applications, games, and websites.
+[Rive](https://rive.app/) is a tool for creating interactive animations that can be used in apps and websites.
+A State Machine in Rive allows animations to respond to triggers, boolean values, and numeric inputs, enabling dynamic control.
 
-### 🧠 What is a State Machine in Rive?
-A **State Machine** in Rive controls how animations change based on user interactions or app logic.  
-Example in this project:
-- Input → User types password  
-- Trigger → Animation changes to “Bear covers eyes”
+Inputs used in this project:
 
-It allows animations to react dynamically to the UI.
+- `trigSuccess` → trigger bear’s happiness ✅
+- `trigFail` → trigger bear’s sadness ❌
+- `isHandsUp` → bear covers eyes 🙈
+- `isChecking` → bear watches screen 👀
+- `numLook` → controls the bear’s eye movement 👁️
 
----
+## 💻 Technologies
 
-## 🛠️ Technologies Used
-- Flutter (Dart)
-- Rive (Real-time animations)
-- Material Design
-- Form validation
+- Flutter 🐦
+- Dart 💻
+- Rive 🖌️
+- Git & GitHub 🛠️
 
----
+## 📂 Project Structure
 
+```text
+login_with_animation_5sa/
+├─ assets/
+│ └─ rive/ # Rive animation file (.riv)
+├─ lib/
+│ ├─ main.dart
+│ └─ screens/
+│ └─ login_screen.dart # Login screen with bear animation
+└─ pubspec.yaml # Dependencies and assets
+```
+
+## Course Info
+
+- Course Name: Graphing
+- Instructor: Rodrigo Fidel Gaxiola Sosa
+
+## Credits
+
+The original polar bear animation was created by [Khanh Nguyen on Rive](https://rive.app/marketplace/3645-7621-remix-of-login-machine/)
