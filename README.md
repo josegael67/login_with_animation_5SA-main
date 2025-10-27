@@ -37,4 +37,3 @@ It allows animations to react dynamically to the UI.
 
 ---
 
-## 📂 Project Structure (lib folder)
