@@ -1,16 +1,40 @@
-# animacion_oso
+# 🐻 Bear Login Animation – Flutter App  
+Interactive login screen using Rive animations
 
-A new Flutter project.
+---
 
-## Getting Started
+## ✨ Short Description of Functionalities
+This project implements a fun and interactive login screen using Flutter and Rive.  
+The bear reacts to user actions in real time:
 
-This project is a starting point for a Flutter application.
+- 👀 Eyes covered when typing the password
+- 😳 Bear looks surprised when the password is shown
+- ✅ Success animation when credentials are valid
+- ❌ Error animation when login fails
 
-A few resources to get you started if this is your first Flutter project:
+This improves user experience through smooth and playful UI feedback.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🎨 What is Rive?  
+**Rive** is an animation tool that allows developers and designers to create real-time, interactive animations that can be used in applications, games, and websites.
+
+### 🧠 What is a State Machine in Rive?
+A **State Machine** in Rive controls how animations change based on user interactions or app logic.  
+Example in this project:
+- Input → User types password  
+- Trigger → Animation changes to “Bear covers eyes”
+
+It allows animations to react dynamically to the UI.
+
+---
+
+## 🛠️ Technologies Used
+- Flutter (Dart)
+- Rive (Real-time animations)
+- Material Design
+- Form validation
+
+---
+
+## 📂 Project Structure (lib folder)
