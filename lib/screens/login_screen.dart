@@ -10,110 +10,133 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _obscurePassword = true;
-
+  // Controladores de Rive
   StateMachineController? controller;
-  SMIBool? isChecking;
-  SMIBool? isHandsUp;
-  SMITrigger? trigSuccess;
-  SMITrigger? trigFail;
-  SMINumber? numLook;
+  SMIBool? isChecking; // Indica si el oso está reaccionando
+  SMIBool? isHandsUp; // Indica si el oso tiene las manos arriba
+  SMITrigger? trigSuccess; // Trigger de animación de éxito
+  SMITrigger? trigFail; // Trigger de animación de fallo
+  SMINumber? numLook; // Controla la mirada del oso (0-100)
 
-  final _emailFocus = FocusNode();
-  final _passwordFocus = FocusNode();
+  // Timer para manejar debounce de animaciones
   Timer? _typingDebounce;
 
-  final emailCtrl = TextEditingController();
-  final passCtrl = TextEditingController();
-
-  String? emailError;
-  String? passError;
-  bool _isLoading = false;
-
-  bool isValidEmail(String email) {
-    final re = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-    return re.hasMatch(email);
-  }
-
-  bool isValidPassword(String pass) {
-    final re = RegExp(
-      r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$',
-    );
-    return re.hasMatch(pass);
-  }
-
-  Future<void> _onLogin() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-
-    final email = emailCtrl.text.trim();
-    final pass = passCtrl.text;
-
-    final eError = isValidEmail(email) ? null : 'Email inválido';
-    final pError =
-        isValidPassword(pass)
-            ? null
-            : 'Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial';
-
-    // Mostrar errores independientemente
-    setState(() {
-      emailError = eError;
-      passError = pError;
-    });
-
-    FocusScope.of(context).unfocus();
-    _typingDebounce?.cancel();
-
-    isChecking?.change(false);
-    isHandsUp?.change(false);
-    numLook?.value = 50.0;
-
-    await Future.delayed(Duration.zero);
-
-    if (emailError == null && passError == null) {
-      trigSuccess?.fire();
-    } else {
-      trigFail?.fire();
-    }
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _emailFocus.addListener(_onFocusChange);
-    _passwordFocus.addListener(_onFocusChange);
-  }
-
-  void _onFocusChange() {
-    if (isHandsUp == null || isChecking == null) return;
-
-    if (!_emailFocus.hasFocus && !_passwordFocus.hasFocus) {
-      // Sin foco en ningún campo
-      isChecking!.change(false);
-      isHandsUp!.change(false);
-      numLook?.value = 50.0;
-    } else if (_emailFocus.hasFocus) {
-      // Foco en email
-      isChecking!.change(true);
-      isHandsUp!.change(false);
-    } else if (_passwordFocus.hasFocus) {
-      // Foco en contraseña → siempre tapar ojos
-      isChecking!.change(false);
-      isHandsUp!.change(true);
-    }
-  }
+  // Estado de estrellas
+  int selectedStars = 0; // Número de estrellas seleccionadas
+  bool _submitted = false; // Si el usuario ya envió su calificación
 
   @override
   void dispose() {
-    emailCtrl.dispose();
-    passCtrl.dispose();
-    _emailFocus.dispose();
-    _passwordFocus.dispose();
-    _typingDebounce?.cancel();
+    _typingDebounce?.cancel(); // Cancelar cualquier timer activo
     super.dispose();
+  }
+
+  /// Convierte el índice de estrella (1..5) a un valor de mirada (0..100)
+  double _starIndexToLookValue(int i) {
+    return ((i - 1) * 25).toDouble().clamp(0.0, 100.0);
+  }
+
+  /// Dispara la animación según la estrella seleccionada
+  void _triggerReaction(int stars) {
+    // CANCELAR INMEDIATAMENTE cualquier animación anterior
+    _typingDebounce?.cancel();
+
+    // Actualizar la estrella seleccionada
+    setState(() {
+      selectedStars = stars;
+    });
+
+    // REINICIAR INMEDIATAMENTE el estado de animación
+    isChecking?.change(false);
+    isHandsUp?.change(false);
+
+    // Pequeña pausa para asegurar que Rive procese el reset
+    Timer(const Duration(milliseconds: 16), () {
+      // Actualizar la mirada del oso
+      numLook?.value = _starIndexToLookValue(stars);
+
+      // Activar la animación de reacción
+      isChecking?.change(true);
+
+      // Disparar el trigger correspondiente
+      if (stars <= 3) {
+        trigFail?.fire();
+      } else {
+        trigSuccess?.fire();
+      }
+
+      // Programar el retorno al estado neutral después de un tiempo
+      _typingDebounce = Timer(const Duration(milliseconds: 800), () {
+        isChecking?.change(false);
+      });
+    });
+  }
+
+  /// Construye la fila de 5 estrellas
+  Widget _buildStars() {
+    List<Widget> stars = [];
+    for (int i = 1; i <= 5; i++) {
+      stars.add(
+        GestureDetector(
+          onTap: () {
+            if (_submitted) return; // Si ya se envió, no hacer nada
+            _triggerReaction(i); // Disparar reacción según la estrella
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            child: Icon(
+              i <= selectedStars ? Icons.star : Icons.star_border,
+              size: 48,
+              color: i <= selectedStars ? Colors.amber : Colors.grey,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: stars);
+  }
+
+  /// Botón "Rate Now" que envía la calificación
+  void _onRateNowPressed() {
+    if (selectedStars == 0) return;
+
+    setState(() {
+      _submitted = true;
+    });
+
+    // Cancelar cualquier animación en curso
+    _typingDebounce?.cancel();
+
+    // Disparar reacción final
+    if (selectedStars <= 3) {
+      trigFail?.fire();
+    } else {
+      trigSuccess?.fire();
+    }
+
+    // Mantener la animación final por más tiempo
+    _typingDebounce = Timer(const Duration(milliseconds: 1500), () {
+      isChecking?.change(false);
+    });
+
+    // Mostrar un SnackBar con feedback
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          selectedStars <= 3
+              ? 'Gracias por tu feedback — lo sentimos, lo mejoraremos.'
+              : '¡Gracias! Nos alegra que te haya gustado.',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Botón "No Thanks" para cerrar la pantalla
+  void _onNoThanksPressed() {
+    Navigator.of(context).maybePop();
   }
 
   @override
@@ -121,18 +144,22 @@ class _LoginScreenState extends State<LoginScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 50),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Animación Rive del oso
               SizedBox(
                 width: size.width,
-                height: 200,
+                height: 300,
                 child: RiveAnimation.asset(
                   'assets/animated_login_character.riv',
                   stateMachines: ['Login Machine'],
                   onInit: (artboard) {
+                    // Inicializar el controlador de la máquina de estados
                     controller = StateMachineController.fromArtboard(
                       artboard,
                       'Login Machine',
@@ -140,119 +167,79 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (controller == null) return;
                     artboard.addController(controller!);
 
+                    // Obtener referencias a los inputs de la máquina
                     isChecking = controller!.findSMI('isChecking');
                     isHandsUp = controller!.findSMI('isHandsUp');
                     trigSuccess = controller!.findSMI('trigSuccess');
                     trigFail = controller!.findSMI('trigFail');
                     numLook = controller!.findSMI('numLook');
+
+                    // Valores iniciales
+                    isChecking?.change(false);
+                    isHandsUp?.change(false);
+                    numLook?.value = 50.0; // mirar al frente
                   },
                   fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                focusNode: _emailFocus,
-                controller: emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  errorText: emailError,
-                  hintText: 'Introduce tu email',
-                  prefixIcon: const Icon(Icons.mail),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onChanged: (value) {
-                  if (isHandsUp != null) isHandsUp!.change(false);
-                  if (isChecking != null) isChecking!.change(true);
-                  final look = (value.length / 80.0 * 100.0).clamp(0.0, 100.0);
-                  numLook?.value = look;
 
-                  _typingDebounce?.cancel();
-                  _typingDebounce = Timer(
-                    const Duration(milliseconds: 3000),
-                    () {
-                      if (!mounted) return;
-                      isChecking?.change(false);
-                    },
-                  );
-                },
+              const SizedBox(height: 8),
+              const Text(
+                "Enjoying Sounter?",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                focusNode: _passwordFocus,
-                controller: passCtrl,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  errorText: passError,
-                  hintText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                      _onFocusChange();
-                    },
-                  ),
-                ),
-                onChanged: (value) => _onFocusChange(),
+              const SizedBox(height: 6),
+              const Text(
+                "With how many stars do you rate your experience.\nTap a star to rate!",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 18),
+
+              // Fila de estrellas
+              _buildStars(),
+              const SizedBox(height: 24),
+
+              // Botón Rate Now
               SizedBox(
-                width: size.width,
-                child: const Text(
-                  '¿Olvidaste tu contraseña?',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(decoration: TextDecoration.underline),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: size.width,
+                width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _onLogin,
+                  onPressed:
+                      (selectedStars == 0 || _submitted)
+                          ? null
+                          : _onRateNowPressed,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 243, 33, 198),
+                    backgroundColor: const Color(0xFF4F46E5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child:
-                      _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                      _submitted
+                          ? const Text(
+                            'Rated',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          )
                           : const Text(
-                            'Login',
-                            style: TextStyle(color: Colors.white, fontSize: 18),
+                            'Rate now',
+                            style: TextStyle(fontSize: 18, color: Colors.white),
                           ),
                 ),
               ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: size.width,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('¿No tienes cuenta? '),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        '¡Regístrate aquí!',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ],
+
+              const SizedBox(height: 12),
+
+              // Botón No Thanks
+              TextButton(
+                onPressed: _onNoThanksPressed,
+                child: const Text(
+                  'NO THANKS',
+                  style: TextStyle(
+                    color: Color(0xFF4F46E5),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
             ],
